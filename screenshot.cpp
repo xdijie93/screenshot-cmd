@@ -113,10 +113,12 @@ int wmain(int argc, wchar_t** argv)
 	printf(	"\nNAME:\n"
  			"\tscreenshot -\tSave a screenshot of the Windows desktop\n\t\t\tor window in .png format.\n\n"
 			"SYNOPSIS:\n"
- 			"\tscreenshot [ -wt WINDOW_TITLE |\n\t\t     -rc LEFT TOP RIGHT BOTTOM |\n\t\t     -o  FILENAME |\n\t\t     -h ]\n\n"
+ 			"\tscreenshot [ -wt WINDOW_TITLE |\n\t\t     -wh WINDOW_HANDLE |\n\t\t     -rc LEFT TOP RIGHT BOTTOM |\n\t\t     -o  FILENAME |\n\t\t     -h ]\n\n"
 			"OPTIONS:\n"
  			"\t-wt WINDOW_TITLE\n"
  			"\t\t\tSelect window with this title.\n\t\t\tTitle must not contain space (\" \").\n"
+			"\t-wh WINDOW_HANDLE\n"
+ 			"\t\t\tSelect window by it's handle\n\t\t\t(representad as hex string - f.e. \"0012079E\") \n"
  			"\t-rc LEFT TOP RIGHT BOTTOM\n" 
  			"\t\t\tCrop source. If no WINDOW_TITLE is provided\n" 
  			"\t\t\t(0,0) is left top corner of desktop,\n"
@@ -133,6 +135,13 @@ int wmain(int argc, wchar_t** argv)
   for(short i=1; i < argc; i++ ) {
 		if( wcscmp( argv[i], L"-wt" )==0 && i+1<argc ){
 			windowSearched = FindWindowW( NULL, argv[i+1] );
+			if(windowSearched){
+				SetWindowPos( windowSearched, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW ); 
+				Sleep(200); //TODO: Arbitrary waiting time for window to become topmost
+				if(!rectProvided) GetWindowRect(windowSearched, &rect);
+			}
+		}else  if( wcscmp( argv[i], L"-wh" )==0 && i+1<argc ){
+			windowSearched = (HWND)wcstoul( argv[i+1],NULL,16); //TODO: How does it work on 64bit enviroment?
 			if(windowSearched){
 				SetWindowPos( windowSearched, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW ); 
 				Sleep(200); //TODO: Arbitrary waiting time for window to become topmost
@@ -191,5 +200,6 @@ int wmain(int argc, wchar_t** argv)
   ReleaseDC(desktop, desktopdc);
   DeleteObject(mybmp);
   DeleteDC(mydc);
-  return stat == Ok;
+  return stat != Ok; // return 0 on success, (Issue 2) 
+					 // thanks to stephan...@gmail.com for reporting this bug.
 }
